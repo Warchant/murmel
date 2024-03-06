@@ -19,9 +19,8 @@
 //! All modules of this library use this error class to indicate problems.
 //!
 
+use bitcoin::bip158;
 use bitcoin::consensus::encode;
-use bitcoin::util;
-use bitcoin::util::bip158;
 use hammersbald;
 use std::convert;
 use std::fmt;
@@ -48,7 +47,7 @@ pub enum Error {
     /// Network IO error
     IO(io::Error),
     /// Bitcoin util error
-    Util(util::Error),
+    // Util(util::Error),  // TODO(Bohdan)
     /// Bitcoin serialize error
     Serialize(encode::Error),
     /// Hammersbald error
@@ -56,7 +55,7 @@ pub enum Error {
     /// Handshake failure
     Handshake,
     /// lost connection
-    Lost(String)
+    Lost(String),
 }
 
 impl std::error::Error for Error {
@@ -75,11 +74,11 @@ impl std::error::Error for Error {
             Error::Downstream(_) => None,
             Error::BadMerkleRoot => None,
             Error::IO(ref err) => Some(err),
-            Error::Util(ref err) => Some(err),
+            // Error::Util(ref err) => Some(err),
             Error::Hammersbald(ref err) => Some(err),
             Error::Serialize(ref err) => Some(err),
             Error::Handshake => None,
-            Error::Lost(_) => None
+            Error::Lost(_) => None,
         }
     }
 }
@@ -93,14 +92,15 @@ impl fmt::Display for Error {
             Error::NoTip => write!(f, "no chain tip found"),
             Error::UnknownUTXO => write!(f, "unknown utxo"),
             Error::NoPeers => write!(f, "no peers"),
-            Error::BadMerkleRoot =>
-                write!(f, "merkle root of header does not match transaction list"),
+            Error::BadMerkleRoot => {
+                write!(f, "merkle root of header does not match transaction list")
+            }
             Error::Handshake => write!(f, "handshake"),
             Error::Lost(ref s) => write!(f, "lost connection: {}", s),
             Error::Downstream(ref s) => write!(f, "downstream error: {}", s),
             // The underlying errors already impl `Display`, so we defer to their implementations.
             Error::IO(ref err) => write!(f, "IO error: {}", err),
-            Error::Util(ref err) => write!(f, "Util error: {}", err),
+            // Error::Util(ref err) => write!(f, "Util error: {}", err),
             Error::Hammersbald(ref err) => write!(f, "Hammersbald error: {}", err),
             Error::Serialize(ref err) => write!(f, "Serialize error: {}", err),
         }
@@ -117,9 +117,7 @@ impl convert::From<Error> for io::Error {
     fn from(err: Error) -> io::Error {
         match err {
             Error::IO(e) => e,
-            _ => {
-                io::Error::new(io::ErrorKind::Other, err.to_string())
-            }
+            _ => io::Error::new(io::ErrorKind::Other, err.to_string()),
         }
     }
 }
@@ -130,12 +128,11 @@ impl convert::From<io::Error> for Error {
     }
 }
 
-
-impl convert::From<util::Error> for Error {
-    fn from(err: util::Error) -> Error {
-        Error::Util(err)
-    }
-}
+// impl convert::From<util::Error> for Error {
+//     fn from(err: util::Error) -> Error {
+//         Error::Util(err)
+//     }
+// }
 
 impl convert::From<hammersbald::Error> for Error {
     fn from(err: hammersbald::Error) -> Error {
@@ -159,7 +156,8 @@ impl convert::From<bip158::Error> for Error {
     fn from(err: bip158::Error) -> Self {
         match err {
             bip158::Error::Io(io) => Error::IO(io),
-            bip158::Error::UtxoMissing(_) => Error::UnknownUTXO
+            bip158::Error::UtxoMissing(_) => Error::UnknownUTXO,
+            _ => panic!("should not get here"),
         }
     }
 }

@@ -22,7 +22,7 @@
 //!
 //!
 
-use bitcoin::network::constants::Network;
+use bitcoin::Network;
 use log::{info, trace};
 use std::net::{SocketAddr, ToSocketAddrs};
 

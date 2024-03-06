@@ -19,15 +19,14 @@
 
 use std::sync::{Arc, RwLock};
 
-use bitcoin::BitcoinHash;
-use bitcoin::blockdata::block::BlockHeader;
+use bitcoin::blockdata::block::Header;
 
 use bitcoin_hashes::sha256d;
 
 use crate::error::Error;
 use crate::headercache::CachedHeader;
 
-use serde_derive::{Serialize, Deserialize};
+use serde_derive::{Deserialize, Serialize};
 
 /// Shared handle to a database storing the block chain
 /// protected by an RwLock
@@ -35,7 +34,6 @@ pub type SharedChainDB = Arc<RwLock<Box<dyn ChainDB>>>;
 
 /// Blockchain DB API for a client node.
 pub trait ChainDB: Send + Sync {
-
     /// Initialize caches.
     fn init(&mut self) -> Result<(), Error>;
 
@@ -43,16 +41,29 @@ pub trait ChainDB: Send + Sync {
     fn batch(&mut self) -> Result<(), Error>;
 
     /// Store a header.
-    fn add_header(&mut self, header: &BlockHeader) -> Result<Option<(StoredHeader, Option<Vec<sha256d::Hash>>, Option<Vec<sha256d::Hash>>)>, Error>;
+    fn add_header(
+        &mut self,
+        header: &Header,
+    ) -> Result<
+        Option<(
+            StoredHeader,
+            Option<Vec<sha256d::Hash>>,
+            Option<Vec<sha256d::Hash>>,
+        )>,
+        Error,
+    >;
 
     /// Return position of hash on trunk if hash is on trunk.
     fn pos_on_trunk(&self, hash: &sha256d::Hash) -> Option<u32>;
 
     /// Iterate trunk [from .. tip].
-    fn iter_trunk<'a>(&'a self, from: u32) -> Box<dyn Iterator<Item=&'a CachedHeader> + 'a>;
+    fn iter_trunk<'a>(&'a self, from: u32) -> Box<dyn Iterator<Item = &'a CachedHeader> + 'a>;
 
     /// Iterate trunk [genesis .. from] in reverse order from is the tip if not specified.
-    fn iter_trunk_rev<'a>(&'a self, from: Option<u32>) -> Box<dyn Iterator<Item=&'a CachedHeader> + 'a>;
+    fn iter_trunk_rev<'a>(
+        &'a self,
+        from: Option<u32>,
+    ) -> Box<dyn Iterator<Item = &'a CachedHeader> + 'a>;
 
     /// Retrieve the id of the block/header with most work.
     fn header_tip(&self) -> Option<CachedHeader>;
@@ -80,18 +91,16 @@ pub trait ChainDB: Send + Sync {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoredHeader {
     /// header
-    pub header: BlockHeader,
+    pub header: Header,
     /// chain height
     pub height: u32,
     /// log2 of total work
     pub log2work: f64,
 }
 
-// need to implement if put_hash_keyed and get_hash_keyed should be used
-impl BitcoinHash for StoredHeader {
-    fn bitcoin_hash(&self) -> sha256d::Hash {
-        self.header.bitcoin_hash()
-    }
-}
-
-
+// // need to implement if put_hash_keyed and get_hash_keyed should be used
+// impl BitcoinHash for StoredHeader {
+//     fn bitcoin_hash(&self) -> sha256d::Hash {
+//         self.header.bitcoin_hash()
+//     }
+// }
